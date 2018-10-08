@@ -1,0 +1,13 @@
+Name: OWS
+Version: 0.1
+Synopsis: Web server build with OCaml.
+Authors: akitanak
+License: MIT
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+Executable "ows"
+  Path: src
+  MainIs: ows.ml
