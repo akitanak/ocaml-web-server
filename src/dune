@@ -1,0 +1,3 @@
+(executable
+  (name ows)
+  (libraries async core ppx_let calendar))
