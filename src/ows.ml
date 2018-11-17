@@ -32,9 +32,9 @@ let extract_request_line line =
 
 let read_request_line r =
   Reader.read_line r
-  >>= function
-  | `Eof -> return None
-  | `Ok line -> return (extract_request_line line)
+  >>| function
+  | `Eof -> None
+  | `Ok line -> extract_request_line line
 
 let extract_header line =
   match String.lsplit2 line ~on:':' with
@@ -52,21 +52,37 @@ let rec read_headers acc r =
       | Some header -> read_headers (header :: acc) r
       | _ -> return acc
 
-let headers () = [
-  ("Content-Type", "text/html");
-  ("Content-Length", "48")
-]
+let read_content r headers =
+  let exist_content_len h = h.field_name = "Content-Length" in
+  match List.find headers ~f:exist_content_len with
+  | None -> return None
+  | Some content_length ->
+    match int_of_string_opt content_length.field_value with
+    | None -> return None
+    | Some length ->
+      let buffer = Bytes.create length in
+      Reader.read r ~len:length buffer
+      >>|function
+      | `Eof -> None
+      | `Ok _ -> Some buffer
+
 
 let read_request r =
   read_request_line r
   >>= fun maybe_status_line ->
   read_headers [] r
-  >>| fun headers ->
-  (maybe_status_line, headers)
+  >>= fun headers ->
+  read_content r headers
+  >>| fun maybe_content ->
+  (maybe_status_line, headers, maybe_content)
 
+let response_headers () = [
+  ("Content-Type", "text/html");
+  ("Content-Length", "48")
+]
 
-let write_headers w =
-  let hdrs = List.fold (headers ()) ~init:"" ~f:(fun acc (k, v) -> Printf.sprintf "%s%s: %s\n" acc k v) in
+let write_response_headers w headers =
+  let hdrs = List.fold headers ~init:"" ~f:(fun acc (k, v) -> Printf.sprintf "%s%s: %s\n" acc k v) in
   Writer.write w hdrs;
   Writer.write w "\n";
   Writer.flushed w
@@ -79,14 +95,18 @@ let run ()=
       (fun _addr r w ->
         read_request r
         >>= function
-        | (None, _) ->
+        | (None, _, _) ->
           Writer.write w "HTTP/1.1 400 Bad Request\n";
           Writer.flushed w
-        | (Some request_line, _) ->
+        | (Some request_line, _, Some content) ->
+          print_string (Bytes.to_string content);
+          Writer.write w (request_line.version ^ " " ^ "200" ^ " " ^ "OK"  ^"\n");
+          Writer.flushed w
+        | (Some request_line, _, None) ->
           Writer.write w (request_line.version ^ " " ^ "200" ^ " " ^ "OK"  ^"\n");
           Writer.flushed w
         >>= fun () ->
-        write_headers w
+        write_response_headers w (response_headers ())
         >>= fun () ->
         Writer.write w "<html><body><h1>Hello, Ocaml</h1></body></html>\n";
         Writer.flushed w)
