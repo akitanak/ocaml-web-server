@@ -26,7 +26,7 @@ let run ()=
         Request.read r
         >>= function
         | (request_line, _, Some content) ->
-          print_string (Bytes.to_string content);
+          print_string (get_current_datetime () ^ " " ^ request_line.http_method ^ " " ^ Bytes.to_string content);
           Writer.write w (request_line.version ^ " " ^ "200" ^ " " ^ "OK"  ^"\n");
           Writer.flushed w
         | (request_line, _, None) ->

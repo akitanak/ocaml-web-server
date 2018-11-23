@@ -36,7 +36,9 @@ B /Users/akitanak/.opam/default/lib/ppxlib/ast
 B /Users/akitanak/.opam/default/lib/ppxlib/print_diff
 B /Users/akitanak/.opam/default/lib/ppxlib/traverse_builtins
 B /Users/akitanak/.opam/default/lib/protocol_version_header
+B /Users/akitanak/.opam/default/lib/re
 B /Users/akitanak/.opam/default/lib/result
+B /Users/akitanak/.opam/default/lib/seq
 B /Users/akitanak/.opam/default/lib/sexplib
 B /Users/akitanak/.opam/default/lib/sexplib/unix
 B /Users/akitanak/.opam/default/lib/sexplib0
@@ -87,7 +89,9 @@ S /Users/akitanak/.opam/default/lib/ppxlib/ast
 S /Users/akitanak/.opam/default/lib/ppxlib/print_diff
 S /Users/akitanak/.opam/default/lib/ppxlib/traverse_builtins
 S /Users/akitanak/.opam/default/lib/protocol_version_header
+S /Users/akitanak/.opam/default/lib/re
 S /Users/akitanak/.opam/default/lib/result
+S /Users/akitanak/.opam/default/lib/seq
 S /Users/akitanak/.opam/default/lib/sexplib
 S /Users/akitanak/.opam/default/lib/sexplib/unix
 S /Users/akitanak/.opam/default/lib/sexplib0

@@ -16,10 +16,18 @@ type header =
 
 exception Invalid_status_line of string;;
 
+let status_line_regex = Re.Posix.compile_pat "([A-Z]+)[ ]([^ ]+)[ ](HTTP/[0-9].[0-9])"
+
 let extract_request_line line =
-  match String.split line ~on:' ' with
-  | [http_method; request_target; version] -> { http_method; request_target; version }
-  | _ -> raise (Invalid_status_line "status line must be consists http method, request target, http version separated with space.")
+  try
+    let extracted = Re.exec status_line_regex line in
+    {
+      http_method = Re.get extracted 1;
+      request_target = Re.get extracted 2;
+      version = Re.get extracted 3;
+    }
+  with
+  Not_found_s _ -> raise (Invalid_status_line "status line must be consists http method, request target, http version separated with space.")
 
 let read_request_line r =
   Reader.read_line r
@@ -53,7 +61,7 @@ let read_content r headers =
     | Some length ->
       let buffer = Bytes.create length in
       Reader.read r ~len:length buffer
-      >>|function
+      >>| function
       | `Eof -> None
       | `Ok _ -> Some buffer
 
