@@ -1,21 +1,15 @@
-open Core;;
-open Async;;
-open CalendarLib;;
+open Core
+open Async
+open CalendarLib
 
 let get_current_datetime () =
   Printer.Calendar.sprint "%a, %d %b %Y %H:%M:%S" (Calendar.now ())
 ;;
 
 let response_headers () = [
-  ("Content-Type", "text/html");
-  ("Content-Length", "48")
+  { HttpHeader.field_name = "Content-Type"; HttpHeader.field_value = "text/html" };
+  { HttpHeader.field_name = "Content-Length"; HttpHeader.field_value = "48" };
 ]
-
-let write_response_headers w headers =
-  let hdrs = List.fold headers ~init:"" ~f:(fun acc (k, v) -> Printf.sprintf "%s%s: %s\n" acc k v) in
-  Writer.write w hdrs;
-  Writer.write w "\n";
-  Writer.flushed w
 
 let run ()= 
   let host_and_port =
@@ -26,17 +20,13 @@ let run ()=
         Request.read r
         >>= function
         | (request_line, _, Some content) ->
-          print_string (get_current_datetime () ^ " " ^ request_line.http_method ^ " " ^ Bytes.to_string content);
-          Writer.write w (request_line.version ^ " " ^ "200" ^ " " ^ "OK"  ^"\n");
-          Writer.flushed w
+          print_string (get_current_datetime () ^ " " ^ request_line.http_method ^ " " ^ Bytes.to_string content ^ "\n");
+          let status_line = { Response.version = request_line.version; Response.http_status = 200; Response.reason_phrase = "OK" } in
+          Response.write w status_line (response_headers ()) "<html><body><h1>Hello, Ocaml</h1></body></html>\n"
         | (request_line, _, None) ->
-          Writer.write w (request_line.version ^ " " ^ "200" ^ " " ^ "OK"  ^"\n");
-          Writer.flushed w
-        >>= fun () ->
-        write_response_headers w (response_headers ())
-        >>= fun () ->
-        Writer.write w "<html><body><h1>Hello, Ocaml</h1></body></html>\n";
-        Writer.flushed w)
+          let status_line = { Response.version = request_line.version; Response.http_status = 200; Response.reason_phrase = "OK" } in
+          Response.write w status_line (response_headers ()) "<html><body><h1>Hello, Ocaml</h1></body></html>\n"
+      )
   in
   ignore (host_and_port : (Socket.Address.Inet.t, int) Tcp.Server.t Deferred.t)
 
