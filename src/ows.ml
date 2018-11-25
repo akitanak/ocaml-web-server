@@ -8,7 +8,6 @@ let get_current_datetime () =
 
 let response_headers () = [
   { HttpHeader.field_name = "Content-Type"; HttpHeader.field_value = "text/html" };
-  { HttpHeader.field_name = "Content-Length"; HttpHeader.field_value = "48" };
 ]
 
 let run ()= 
@@ -19,13 +18,18 @@ let run ()=
       (fun _addr r w ->
         Request.read r
         >>= function
-        | (request_line, _, Some content) ->
-          print_string (get_current_datetime () ^ " " ^ request_line.http_method ^ " " ^ Bytes.to_string content ^ "\n");
-          let status_line = { Response.version = request_line.version; Response.http_status = 200; Response.reason_phrase = "OK" } in
-          Response.write w status_line (response_headers ()) "<html><body><h1>Hello, Ocaml</h1></body></html>\n"
-        | (request_line, _, None) ->
-          let status_line = { Response.version = request_line.version; Response.http_status = 200; Response.reason_phrase = "OK" } in
-          Response.write w status_line (response_headers ()) "<html><body><h1>Hello, Ocaml</h1></body></html>\n"
+        | (request_line, _, _) ->
+          try_with(fun () -> RequestHandler.handle_request request_line)
+          >>= function
+          | Ok content ->
+            let status_line = { Response.version = request_line.version; Response.http_status = 200; Response.reason_phrase = "OK" } in
+            let content_type = { HttpHeader.field_name = "Content-Length"; HttpHeader.field_value = string_of_int (String.length content)} in
+            Response.write w status_line (content_type :: (response_headers ())) content
+          | Error _ ->
+            let status_line = { Response.version = request_line.version; Response.http_status = 404; Response.reason_phrase = "Not Found" } in
+            let content = "Not Found" in
+            let content_type = { HttpHeader.field_name = "Content-Length"; HttpHeader.field_value = string_of_int (String.length content)} in
+            Response.write w status_line (content_type :: (response_headers ())) content
       )
   in
   ignore (host_and_port : (Socket.Address.Inet.t, int) Tcp.Server.t Deferred.t)
